@@ -27,12 +27,9 @@ def sigmoid(t):
 
 def logistic_loss_gradient(y, tx, w):
     """Computes the cost by negative log likelihood and the gradient of the loss."""
-    epsilon = 1e-15
     pred = sigmoid(np.dot(tx, w))
-    pred = np.where(pred == 0.0, epsilon, pred)
-    pred = np.where(pred == 1.0, 1 - epsilon, pred)
-    loss = (1 / tx.shape[0]) * (0.6 * y.T.dot(np.log(pred)) + 0.3 * (1 - y).T.dot(np.log(1 - pred)))
-    gradient = np.dot(tx.T, (pred - y)) / tx.shape[0]
+    loss = y.T.dot(np.log(pred)) + (1 - y).T.dot(np.log(1 - pred))
+    gradient = np.dot(tx.T, (pred - y))
 
     return np.squeeze(-loss), gradient
 
@@ -94,7 +91,7 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
         # store w and loss
         ws.append(w)
         losses.append(loss)
-        print("Gradient Descent({bi}/{ti}): loss={l}".format(bi=n_iter, ti=max_iters - 1, l=loss))
+        # print("Gradient Descent({bi}/{ti}): loss={l}".format(bi=n_iter, ti=max_iters - 1, l=loss))
 
     return ws[-1], losses[-1]
 
@@ -123,8 +120,8 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
             # store w and loss
             ws.append(w)
             losses.append(loss)
-            print("Stochastic gradient Descent({bi}/{ti}): loss={l}".format(
-                bi=n_iter, ti=max_iters - 1, l=loss))
+            # print("Stochastic gradient Descent({bi}/{ti}): loss={l}".format(
+            #     bi=n_iter, ti=max_iters - 1, l=loss))
 
         return ws[-1], losses[-1]
 
@@ -177,8 +174,8 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     for iter in range(max_iters):
         loss, gradient = logistic_loss_gradient(y, tx, w)
         w = w - gamma * gradient
-        if iter % 10 == 0:
-            print("Current iteration={}, loss={}".format(iter, loss))
+        # if iter % 10 == 0:
+        #     print("Current iteration={}, loss={}".format(iter, loss))
         losses.append(loss)
         ws.append(w)
         # added any.
@@ -204,8 +201,8 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     for iter in range(max_iters):
         loss, gradient = penalized_logistic_loss_gradient(y, tx, w, lambda_)
         w = w - gamma * gradient
-        if iter % 10 == 0:
-            print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
+        # if iter % 10 == 0:
+        #     print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
         losses.append(loss)
         ws.append(w)
 
