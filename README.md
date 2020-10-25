@@ -35,10 +35,10 @@ and regularized logistic regression using GD or SGD. Also, the file contains add
 ### Running the model
 
 1. To run the code you first need to have *Python* installed. Also, the only external library for the model used in *numpy*, but if you want to generate plots you should also install *matplotlib*.
-> The needed libraries are stated in `requirements.txt`, to install them run: `pip install -r requirements.txt` (for Python 2), 
-or `pip3 install -r requirements.txt` (for Python 3).
+> The needed libraries are stated in `requirements.txt`, to install them run: `pip install -r requirements.txt` (Python 2), 
+or `pip3 install -r requirements.txt` (Python 3).
 
-2. To run the model simply run the python script `run.py`.
+2. To run the model with our best results simply run the python script `run.py`.
 
 Another way of running the model is opening the `project1.ipybn` as *Jupyter notebook* or in 
 *Google Colab*. There, you can run all the cells and experiment further.
