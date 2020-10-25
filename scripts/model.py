@@ -64,17 +64,20 @@ class Model(object):
         pass
 
     def predict(self, inputs):
+        """Function to predict label given the input features"""
         if self.use_logistic:
             return self.predict_labels_logistic(self.w, inputs)
         return predict_labels(self.w, inputs)
 
     def predict_labels_logistic(self, weights, data):
+        """Function to predict label given the input features when using logistic regression"""
         y_pred = sigmoid(np.dot(data, weights))
         y_pred[np.where(y_pred < 0.5)] = 0
         y_pred[np.where(y_pred >= 0.5)] = 1
         return y_pred
 
     def create_submission(self, inputs, name):
+        """Function to crate submission csv file"""
         pred = self.predict(inputs)
 
         if self.use_logistic:
@@ -85,10 +88,12 @@ class Model(object):
         return name
 
     def initialize_weights(self, shape):
+        """Weight intialization"""
         # Our function is not convex
         return he_weights_initialization(shape)
 
     def compute_accuracy(self, inputs, true_values):
+        """"Computation of accuracy"""
         predicted_values = self.predict(inputs)
         number_correct = np.sum(predicted_values == true_values)
         accuracy = number_correct / len(predicted_values)
@@ -96,6 +101,7 @@ class Model(object):
         return accuracy
 
     def stopping_condition(self, losses, accs):
+        """Stop condition to prevent overfitting"""
         # if validation loss started to decrease during last iters
         should_stop = True
         for i in np.arange(2, 4):
@@ -104,6 +110,7 @@ class Model(object):
         return should_stop
 
     def apply_regularization(self, w, loss, gradient, regularization, lambda_, m):
+        """"Regularization function"""
         if regularization == 'l2':
             loss += lambda_ / (2 * m) * np.squeeze(w.T.dot(w))
             gradient += lambda_ / m * w
@@ -113,6 +120,7 @@ class Model(object):
         return loss, gradient
 
     def _learn_using_GD(self, y, tx, w, fn, gamma, lambda_, regularization):
+        """ Gradient descent. """
         loss, grad = fn(y, tx, w, lambda_)
         loss, grad = self.apply_regularization(w, loss, grad, regularization, lambda_, tx.shape[0])
         w = w - gamma * grad
@@ -153,9 +161,8 @@ class Model(object):
 
     def train(self, y, tx, y_test, tx_test, fn, max_iters=8000, gamma=1, batch_size=None, all_output=False,
               reg_lambda=None, regularization=None, gamma_decay=None, reinitialize_weights=False):
-        """
-        If batch size is set, the SGD is used instead of GD.
-        """
+        """Function to train the model  """
+        #If batch size is set, the SGD is used instead of GD.
         self.tx = tx
         self.gamma = gamma
         self.use_logistic = fn == logistic_regression_fn

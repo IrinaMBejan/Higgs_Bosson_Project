@@ -2,6 +2,7 @@ import numpy as np
 
 
 def standardize(x, mean=None, std=None):
+    """Standardize the data"""
     if mean is None:
         mean = np.mean(x, axis=0)
 
@@ -15,6 +16,7 @@ def standardize(x, mean=None, std=None):
 
 
 def scaling(x, min_x=None, max_x=None):
+    """Scale the data from 0 to 1"""
     if min_x is None:
         min_x = np.min(x, axis=0)
 
@@ -26,6 +28,7 @@ def scaling(x, min_x=None, max_x=None):
 
 
 def split_data(x, y, ratio, seed=1):
+    """Split data on the test and train data sets"""
     # set seed
     np.random.seed(seed)
     row_num = len(y)
@@ -43,27 +46,8 @@ def split_data(x, y, ratio, seed=1):
 
     return x_train, x_test, y_train, y_test
 
-
-def get_outlier_mask(feature_column):
-    Q1 = np.nanquantile(feature_column, .25)
-    Q3 = np.nanquantile(feature_column, .75)
-    IQR = Q3 - Q1
-
-    def is_outlier(value):
-        return (value < (Q1 - 5 * IQR)) | (value > (Q3 + 5 * IQR))
-
-    is_outlier_map = np.vectorize(is_outlier)
-    return is_outlier_map(feature_column)
-
-
-def remove_outlier_points(data, labels):
-    feature_columns_masks = np.stack([get_outlier_mask(data[:, i]) for i in range(data.shape[1])])
-    datapoints_masks = feature_columns_masks.T
-    outliers = np.array([np.any(point) for point in datapoints_masks])
-    return data[~outliers], labels[~outliers]
-
-
 def replace_with_mean(feature_column):
+    """"Replace NaN values with the mean of the feature column"""
     mean = np.nanmean(feature_column.astype('float64'))
     feature_column = np.where(np.isnan(feature_column),
                               mean,
@@ -72,7 +56,7 @@ def replace_with_mean(feature_column):
 
 
 def build_poly(x, degree):
-    """polynomial basis functions for input data x, for j=0 up to j=degree."""
+    """Polynomial basis functions for input data x, for j=0 up to j=degree."""
     poly = np.ones((len(x), 1));
 
     for i in range(degree):
@@ -83,17 +67,19 @@ def build_poly(x, degree):
 
 def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=False, poly_rank=None, use_log=True,
                       log_mean=None, log_std=None, mean=None, std=None):
-    tx = np.where(tx == -999, np.nan, tx)
+    """Preprocess input data"""
 
-    if remove_outliers:
+    tx = np.where(tx == -999, np.nan, tx) #replace -999 values with the mean
+
+    if remove_outliers: #remove outliers
         tx, y = remove_outlier_points(tx, y)
 
-    if use_dropping:
+    if use_dropping: #drop columns
         columns_to_drop = [0, 4, 5, 6, 12, 23, 24, 25, 26, 27, 28]
         tx = np.delete(tx, columns_to_drop, axis=1)
     else:
         for i in range(tx.shape[1]):
-            tx[:, i] = replace_with_mean(tx[:, i])
+            tx[:, i] = replace_with_mean(tx[:, i]) #replace NaN values with the mean
         # tx = np.nan_to_num(tx)
 
     if use_log:
@@ -111,20 +97,19 @@ def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=F
     if use_log:
         tx = np.c_[tx, log_tx]
 
-    if usePCA:
+    if usePCA: #Primal Component Analysis
         eig_val, eig_vec, j = PCA(tx, 0.97)
         tx = tx.dot(eig_vec)
         print('Columns left:', j)
 
-    if poly_rank:
+    if poly_rank: #Build polynomial basis function
         tx = build_poly(tx, poly_rank)
 
     return tx, y, mean, std, log_mean, log_std
 
 
-
 def get_with_jet(dataset, output_all, jet_num):
-    "Given jet and dataset return the rows with th egiven jet number"
+    "Given jet and dataset return the rows with the given jet number"
     dataset[dataset[:, 22] > 3] = 3
 
     rows = dataset[:, 22] == jet_num
@@ -167,8 +152,9 @@ def split_input_data(dataset_all, output_all=np.array([])):
 
     return datasets, outputs, rows
 
+
 def get_outlier_mask(feature_column):
-    "Mask for the outliers"
+    """"""
     Q1 = np.nanquantile(feature_column, .25)
     Q3 = np.nanquantile(feature_column, .75)
     IQR = Q3 - Q1
@@ -181,18 +167,19 @@ def get_outlier_mask(feature_column):
 
 
 def remove_outlier_points(data, labels):
-    "Remove outliers"
+    """Remove outliers"""
     feature_columns_masks = np.stack([get_outlier_mask(data[:, i]) for i in range(data.shape[1])])
     datapoints_masks = feature_columns_masks.T
     outliers = np.array([np.any(point) for point in datapoints_masks])
     return data[~outliers], labels[~outliers]
 
+
+
 def PCA(tx, treshold):
-    " Principal Component Analysis "
-    # computing covariance matrix, this represents the correlation between two variables
-    cov_matrix = np.cov(tx.T)
-    # eigenvalues and eignvectors
-    eig_vals, eig_ves = np.linalg.eig(cov_matrix)
+    """ Principal Component Analysis """
+
+    cov_matrix = np.cov(tx.T) # computing covariance matrix, this represents the correlation between two variables
+    eig_vals, eig_ves = np.linalg.eig(cov_matrix) # eigenvalues and eignvectors
 
     # sort eigenvalues in decreasing order
     idx = eig_vals.argsort()[::-1]

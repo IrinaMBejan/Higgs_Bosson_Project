@@ -50,7 +50,7 @@ def plot_losses(losses):
 
 def plot_test_data(test_losses, test_accs):
   plt.plot(np.arange(len(test_losses))*10, test_losses,'-b', label='test loss')
-  plt.plot(np.arange(len(test_accs)), test_accs,'-r', label='test acc')
+  plt.plot(np.arange(len(test_accs))*10, test_accs,'-r', label='test acc')
 
   plt.xlabel("Iterations")
   plt.title('Validation loss & acc')

@@ -13,15 +13,15 @@ num_jets = 4
 models = [Model()] * 4
 
 model_weights_filenames = [
-  'model_0_poly_7_cap_extradrop_log.npy',
-  'model_1_poly_7_cap_extradrop_log.npy',
-  'model_2_poly_7_cap_extradrop_log.npy',
-  'model_3_poly_7_cap_extradrop_log.npy'
+  '../pretrained_data/model_0_poly_7_cap_extradrop_log.npy',
+  '../pretrained_data/model_1_poly_7_cap_extradrop_log.npy',
+  '../pretrained_data/model_2_poly_7_cap_extradrop_log.npy',
+  '../pretrained_data/model_3_poly_7_cap_extradrop_log.npy'
 ]
 
 def train_model(dataset, output, model, fn, **kwargs):
     print('Preprocessing inputs...')
-    tx_preprocessed, y_preprocced, mean, std, log_mean, log_std = preprocess_inputs(dataset, output, use_log=True, poly_rank=5)
+    tx_preprocessed, y_preprocced, mean, std, log_mean, log_std = preprocess_inputs(dataset, output, use_log=True, poly_rank=7)
     tx_train, tx_test, y_train, y_test = split_data(tx_preprocessed, y_preprocced, 0.7)
 
     print('Training...')
@@ -35,7 +35,7 @@ def train_model(dataset, output, model, fn, **kwargs):
 def run_on_test_data(test_data, means, stds, log_stds, log_means):
   test_data = cap_outliers_fn(test_data)
   datasets, outputs, rows = split_input_data(test_data)
-  predictions = np.zeros((test_data.shape[0],1))
+  predictions = np.zeros((test_data.shape[0], 1))
   for jet in range(num_jets):
     preprocessed_data, _, _, _, _, _ = preprocess_inputs(datasets[jet], outputs[jet], poly_rank=7, mean=means[jet], std=stds[jet], log_std=log_stds[jet], log_mean=log_means[jet])
     pred = models[jet].predict(preprocessed_data)
@@ -73,7 +73,9 @@ def load_data(change_labels=True):
     return tx, y, tx_submission
 
 def run(pretrained=True, generate_submission_file=True):
-  tx, y, tx_submission = load_data(change_labels=False)
+  tx, y, tx_submission = load_data(change_labels=True)
+  tx = tx[:10000]
+  y = y[:10000]
   tx_c = cap_outliers_fn(tx)
   datasets, outputs, _ = split_input_data(tx_c, y)
 
@@ -84,20 +86,21 @@ def run(pretrained=True, generate_submission_file=True):
       models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], logistic_regression_fn, max_iters=250, batch_size=8192, gamma_decay=None, gamma=0.1, reg_lambda=1e-6, regularization='l2')
     else:
       models[jet] = Model()
-      models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=10000, gamma=0.05, reg_lambda=1e-6, regularization='l2')
+      models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], logistic_regression_fn, batch_size=None, max_iters=10000, gamma=0.05, reg_lambda=1e-6, regularization='l2')
       save_weights_model(models[jet], 'model_{}_least_squares.npy'.format(jet))
 
-    print('Accuracy on whole training is', get_train_data_accuracy(tx, y))
+    means.append(mean)
+    stds.append(std)
+    log_means.append(log_mean)
+    log_stds.append(log_std)
 
-  means.append(mean)
-  stds.append(std)
-  log_means.append(log_mean)
-  log_stds.append(log_std)
+  print('Accuracy on whole training is', get_train_data_accuracy(tx_c, y))
+
 
   if generate_submission_file:
     create_submission('output.csv', tx_submission)
 
-run(pretrained=False)
+run(pretrained=True)
 
 
 # tx, y, tx_submission = load_data(change_labels=False)
