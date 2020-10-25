@@ -12,9 +12,12 @@ which has achieved an accuracy of 79.9\% on the AICrowd platform.
 ### Model structure
 
 The folder `/scripts` has the following files:
+<br />`data_processor.py` - All the preprocessing and refining of the raw data. The methods are ...
+<br />`model.py` -
+<br />`implementation.py` - Here are the 6 methods used for classification: linear regression using gradient descent, linear regression using stochastic
+gradient descent, least squares regression using normal equations, ridge regression using normal equations, logistic regression using GD or SGD,
+and regularized logistic regression using GD or SGD. Also, the file contains additional methods such as losses and gradients computations.
 <br />`run.py` - The model runner, it runs the model with best parameters.
-<br />`implementation.py` - Here are the 6 methods used for classification: least squares  and its helper functions
-<br />`data_processor.py` - All the preprocessing and refining of the raw data. 
 <br />`plots.py` - Methods for plotting the data.
 <br />`proj1_helpers.py` - Helpers received for the project.
 
