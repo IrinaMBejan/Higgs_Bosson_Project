@@ -125,7 +125,7 @@ def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=F
 
 def get_with_jet(dataset, output_all, jet_num):
     "Given jet and dataset return the rows with th egiven jet number"
-    dataset[dataset[:, 22] > 3] = 3
+    dataset[:, 22] = np.where(dataset[:, 22] > 3, 3, dataset[:,22])
 
     rows = dataset[:, 22] == jet_num
     if output_all.size != 0:
@@ -215,7 +215,6 @@ def PCA(tx, treshold):
 
 def cap_outliers_fn(x):
     "Capping the outliers"
-    print("Capping the outliers")
     # DER_mass_MMC
     x[x[:, 0] > 700] = 700
 
