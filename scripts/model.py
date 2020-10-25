@@ -1,6 +1,7 @@
 import numpy as np
 from scripts.proj1_helpers import create_csv_submission
 
+
 def compute_mse(y, tx, w):
     "Compute mse"
     e = y - np.dot(tx, w)
@@ -43,10 +44,17 @@ def least_squares_fn(y, tx, w, lambda_=None):
 
     return loss, gradient
 
+
 def he_weights_initialization(shape):
     """Initialize weights"""
     w = np.random.randn(shape[0], shape[1]) * np.sqrt(2 / shape[1])
     return w
+
+
+def compute_class_weights(y):
+    """Computing the class weights"""
+    #i think we don't use this?
+    return len(y) / (2 * np.bincount(np.squeeze(y).astype(int)))
 
 
 class Model(object):
@@ -69,7 +77,7 @@ class Model(object):
 
     def create_submission(self, inputs, name):
         """Create cvs submission"""
-        #Look into files.download
+        # Look into files.download
         pred = self.predict(inputs)
         pred[np.where(pred == 0)] = -1
         create_csv_submission(list(range(350000, 350000 + len(pred))), pred, name)
@@ -153,7 +161,7 @@ class Model(object):
     def train(self, y, tx, y_test, tx_test, fn, max_iters=8000, gamma=1, batch_size=None, all_output=False,
               reg_lambda=None, regularization='l2', gamma_decay=None, reinitialize_weights=False):
         """ Function to train the model"""
-        #If batch size is set, the SGD is used instead of GD.
+        # If batch size is set, the SGD is used instead of GD.
         # tx = np.c_[np.ones((tx.shape[0], 1)), tx]
         # tx_test = np.c_[np.ones((tx_test.shape[0], 1)), tx_test]
         self.tx = tx

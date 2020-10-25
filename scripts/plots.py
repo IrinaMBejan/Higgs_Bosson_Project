@@ -38,3 +38,22 @@ def plot_distrib(tx, y):
     sns.distplot(pos_values, color="dodgerblue", label="y=1")
     sns.distplot(neg_values, color="orange", label="y=-1")
     plt.show()
+
+def plot_losses(losses):
+  plt.plot(np.arange(len(losses)), losses, label='loss')
+
+  plt.xlabel("Iterations")
+  plt.title('Training loss')
+  plt.legend(loc='upper right')
+
+  plt.show()
+
+def plot_test_data(test_losses, test_accs):
+  plt.plot(np.arange(len(test_losses))*10, test_losses,'-b', label='test loss')
+  plt.plot(np.arange(len(test_accs)), test_accs,'-r', label='test acc')
+
+  plt.xlabel("Iterations")
+  plt.title('Validation loss & acc')
+  plt.legend(loc='upper right')
+
+  plt.show()
