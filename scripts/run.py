@@ -1,10 +1,10 @@
 import numpy as np
 
-from scripts.data_processor import split_data, preprocess_inputs, cap_outliers_fn, split_input_data
-from scripts.plots import plot_test_data
-from scripts.model import Model, least_squares_fn, logistic_regression_fn
-from scripts.proj1_helpers import create_csv_submission, load_csv_data, predict_labels
-from scripts.utils import load_weights_model, save_weights_model
+from data_processor import split_data, preprocess_inputs, cap_outliers_fn, split_input_data
+from plots import plot_test_data
+from model import Model, least_squares_fn, logistic_regression_fn
+from proj1_helpers import create_csv_submission, load_csv_data, predict_labels
+from utils import load_weights_model, save_weights_model
 
 # Change this to use a different model
 # If set to False, the least_squares is run
@@ -29,6 +29,7 @@ model_weights_filenames = [
     '../pretrained_data/model_2_poly_7_cap_extradrop_log.npy',
     '../pretrained_data/model_3_poly_7_cap_extradrop_log.npy'
 ]
+
 
 def train_model(dataset, output, model, fn, **kwargs):
     print('Preprocessing inputs...')
@@ -57,11 +58,13 @@ def run_on_test_data(test_data):
         predictions[rows[jet]] = jet_predictions
     return predictions
 
+
 def get_train_data_accuracy(tx_train, y_train):
     predictions = run_on_test_data(tx_train)
     number_correct = np.sum(predictions == y_train)
     accuracy = number_correct / len(predictions)
     return accuracy
+
 
 def create_submission(name, tx_test):
     predictions = run_on_test_data(tx_test)
