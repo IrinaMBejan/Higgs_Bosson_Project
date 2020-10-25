@@ -11,7 +11,7 @@ from scripts.utils import load_weights_model, save_weights_model
 USE_LOGISTIC = True
 # If set to pretrained, it will load weights for models. Only available for logistic regression where training takes
 # a long time.
-USE_PRETRAINED = True
+USE_PRETRAINED = False
 
 # Global values to store training data the mean, standard deviation, logarithmic mean and logarithmic standard deviation
 # for each model corresponding to each jet.
@@ -21,7 +21,7 @@ log_means = [None] * 4
 log_stds = [None] * 4
 
 num_jets = 4
-models = [Model()] * 4
+models = [Model(), Model(), Model(), Model()]
 
 model_weights_filenames = [
     '../pretrained_data/model_0_poly_7_cap_extradrop_log.npy',
@@ -54,8 +54,8 @@ def run_on_test_data(test_data):
                                                              mean=means[jet],
                                                              std=stds[jet], log_std=log_stds[jet],
                                                              log_mean=log_means[jet])
-        pred = models[jet].predict(preprocessed_data)
-        predictions[rows[jet]] = pred
+        jet_predictions = models[jet].predict(preprocessed_data)
+        predictions[rows[jet]] = jet_predictions
     return predictions
 
 
@@ -101,21 +101,20 @@ def run_least_squares(generate_submission_file=True):
         models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet],
                                                                 least_squares_fn, batch_size=None, max_iters=10000,
                                                                 gamma=0.05, reg_lambda=1e-6, regularization='l2')
-        save_weights_model(models[jet], 'model_{}_least_squares.npy'.format(jet))
+        save_weights_model(models[jet], '../output_files/model_{}_least_squares.npy'.format(jet))
 
         means.append(mean)
         stds.append(std)
         log_means.append(log_mean)
         log_stds.append(log_std)
 
-    print('Accuracy on whole training is', get_train_data_accuracy(tx, y))
-
+    print('Accuracy on entire training dataset is', get_train_data_accuracy(tx, y))
 
     if generate_submission_file:
-        create_submission('output.csv', tx_submission)
+        create_submission('../output_files/output.csv', tx_submission)
 
 
-def run_logistic_reggression(pretrained=True, generate_submission_file=False):
+def run_logistic_regression(pretrained=True, generate_submission_file=False) -> None:
     tx, y, tx_submission = load_data()
     tx_c = cap_outliers_fn(tx)
     datasets, outputs, _ = split_input_data(tx_c, y)
@@ -140,34 +139,19 @@ def run_logistic_reggression(pretrained=True, generate_submission_file=False):
         stds.append(std)
         log_means.append(log_mean)
         log_stds.append(log_std)
-    # print('Accuracy on whole training is', get_train_data_accuracy(tx, y))
+    print('Accuracy on whole training is', get_train_data_accuracy(tx, y))
 
     if generate_submission_file:
         create_submission('output.csv', tx_submission)
 
 
 def main():
+    # Runs our best configuration
     if USE_LOGISTIC:
-        run_logistic_reggression(pretrained=USE_PRETRAINED)
+        run_logistic_regression(pretrained=USE_PRETRAINED)
     else:  # use least_squares
         run_least_squares()
 
 
 if __name__ == "__main__":
     main()
-
-# tx, y, tx_submission = load_data(change_labels=False)
-# tx_c = cap_outliers_fn(tx)
-# datasets, outputs, _ = split_input_data(tx_c, y)
-#
-# jet = 0
-# models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=10000, gamma=0.1, reg_lambda=0.0001, regularization='l1')
-#
-# jet = 1
-# models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=10000, gamma=0.015, reg_lambda=0.0001, regularization='l1')
-#
-# jet = 2
-# models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=10000, gamma=0.015, reg_lambda=0.0001, regularization='l1')
-#
-# jet = 3
-# models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=40000, gamma=0.015, reg_lambda=0.0001, regularization='l1')
