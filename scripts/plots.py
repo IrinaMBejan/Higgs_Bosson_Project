@@ -1,9 +1,14 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from scripts.data_processor import split_input_data
 
 
-def plot_features(tx):
+def plot_features(tx, jet=None):
+    if jet:
+        datasets, _, _ = split_input_data(tx)
+        tx = datasets[jet]
+
     for i in range(tx.shape[1]):
         print(i)
         values = tx[:, i]
