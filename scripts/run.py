@@ -69,7 +69,7 @@ tx, y, tx_submission = load_data(change_labels=False)
 tx_c = cap_outliers_fn(tx)
 datasets, outputs, _ = split_input_data(tx_c, y)
 
-jet = 1
+jet = 0
 models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=10000, gamma=0.015, reg_lambda=0.0001, regularization='l1')
 
 jet = 1

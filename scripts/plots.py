@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import seaborn as sns
+#import seaborn as sns
 import numpy as np
 from scripts.data_processor import split_input_data
 
@@ -32,12 +32,12 @@ def plot_points(tx, y):
     plt.show()
 
 
-def plot_distrib(tx, y):
-    pos_values = np.stack([tx[i] for i in range(len(y)) if y[i][0] == 1], axis=0)
-    neg_values = np.stack([tx[i] for i in range(len(y)) if y[i][0] == 0], axis=0)
-    sns.distplot(pos_values, color="dodgerblue", label="y=1")
-    sns.distplot(neg_values, color="orange", label="y=-1")
-    plt.show()
+# def plot_distrib(tx, y):
+#     pos_values = np.stack([tx[i] for i in range(len(y)) if y[i][0] == 1], axis=0)
+#     neg_values = np.stack([tx[i] for i in range(len(y)) if y[i][0] == 0], axis=0)
+#     sns.distplot(pos_values, color="dodgerblue", label="y=1")
+#     sns.distplot(neg_values, color="orange", label="y=-1")
+#     plt.show()
 
 def plot_losses(losses):
   plt.plot(np.arange(len(losses)), losses, label='loss')
