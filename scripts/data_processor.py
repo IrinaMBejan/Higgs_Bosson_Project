@@ -109,8 +109,8 @@ def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=F
 
 
 def get_with_jet(dataset, output_all, jet_num):
-    "Given jet and dataset return the rows with the given jet number"
-    dataset[dataset[:, 22] > 3] = 3
+    "Given jet and dataset return the rows with th egiven jet number"
+    dataset[:, 22] = np.where(dataset[:, 22] > 3, 3, dataset[:,22])
 
     rows = dataset[:, 22] == jet_num
     if output_all.size != 0:
@@ -152,9 +152,8 @@ def split_input_data(dataset_all, output_all=np.array([])):
 
     return datasets, outputs, rows
 
-
 def get_outlier_mask(feature_column):
-    """"""
+    "Mask for the outliers"
     Q1 = np.nanquantile(feature_column, .25)
     Q3 = np.nanquantile(feature_column, .75)
     IQR = Q3 - Q1
@@ -172,8 +171,6 @@ def remove_outlier_points(data, labels):
     datapoints_masks = feature_columns_masks.T
     outliers = np.array([np.any(point) for point in datapoints_masks])
     return data[~outliers], labels[~outliers]
-
-
 
 def PCA(tx, treshold):
     """ Principal Component Analysis """
