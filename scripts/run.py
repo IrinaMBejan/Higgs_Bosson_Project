@@ -30,7 +30,6 @@ model_weights_filenames = [
     '../pretrained_data/model_3_poly_7_cap_extradrop_log.npy'
 ]
 
-
 def train_model(dataset, output, model, fn, **kwargs):
     print('Preprocessing inputs...')
     tx_preprocessed, y_preprocced, mean, std, log_mean, log_std = preprocess_inputs(dataset, output, use_log=True,
@@ -58,13 +57,11 @@ def run_on_test_data(test_data):
         predictions[rows[jet]] = jet_predictions
     return predictions
 
-
 def get_train_data_accuracy(tx_train, y_train):
     predictions = run_on_test_data(tx_train)
     number_correct = np.sum(predictions == y_train)
     accuracy = number_correct / len(predictions)
     return accuracy
-
 
 def create_submission(name, tx_test):
     predictions = run_on_test_data(tx_test)
