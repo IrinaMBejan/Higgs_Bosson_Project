@@ -28,7 +28,14 @@ def scaling(x, min_x=None, max_x=None):
 
 
 def split_data(x, y, ratio, seed=1):
-    """Split data on the test and train data sets"""
+    """
+    Split data on the test and train data sets.
+    Args:
+        x: the input dataset
+        y: the labels for the input dataset
+        ratio: float number between 0 to 1 to specify the percentage of training data
+        seed: seed number to get same permutation of the data
+    """
     # set seed
     np.random.seed(seed)
     row_num = len(y)
@@ -68,7 +75,21 @@ def build_poly(x, degree):
 
 def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=False, poly_rank=None, use_log=True,
                       log_mean=None, log_std=None, mean=None, std=None):
-    """Preprocess input data"""
+    """
+    Preprocess input data
+    Args:
+        tx: The input dataset
+        y: Labels of the dataset
+        use_dropping: If true, drop columns with missing values
+        remove_outliers: If true, any values that lie 4.5IQR below Q1 or above Q3 are removed.
+        usePCA: If true, principal component analysis is done and highly correlated features are removed.
+        poly_rank: The degree of the polynomial expansion. If None, the expansion is not applied.
+        use_log: If true, expands the dataset with the logarithmic scale of all features.
+        log_mean: The mean value of the logarithmic scale features. If not specified, it is computed for given values.
+        log_std: The standard deviation of features. If not specified, it is computed for given values.
+        mean: The mean of given values without the log scale. If not specified, it is computed for the given values.
+        std: The standard dev of given values without std scale. If not specified, it is computed for the given values.
+    """
 
     tx = np.where(tx == -999, np.nan, tx)  # replace -999 values with the mean
 
@@ -98,7 +119,7 @@ def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=F
     if use_log:
         tx = np.c_[tx, log_tx]
 
-    if usePCA:  # Primal Component Analysis
+    if usePCA:  # Do Principal Component Analysis
         eig_val, eig_vec, j = PCA(tx, 0.97)
         tx = tx.dot(eig_vec)
         print('Columns left:', j)
@@ -109,143 +130,146 @@ def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=F
     return tx, y, mean, std, log_mean, log_std
 
 
-def get_with_jet(dataset, output_all, jet_num):
-    "Given jet and dataset return the rows with th egiven jet number"
+def get_with_jet(dataset, outputs, jet_num):
+    """
+    Computes the subdataset according to a given jet.
+    Args:
+        dataset: The dataset to be split. The column 22 must contain the jet number.
+        outputs: The labels of the dataset.
+        jet_num: The jet number (must be 0,1,2 or 3).
+
+    Returns:
+        A subset of the initial dataset
+    """
     dataset[:, 22] = np.where(dataset[:, 22] > 3, 3, dataset[:, 22])
 
     rows = dataset[:, 22] == jet_num
-    if output_all.size != 0:
-        return dataset[rows, :], output_all[rows], rows
+    if outputs.size != 0:
+        return dataset[rows, :], outputs[rows], rows
     else:
         return dataset[rows, :], np.array([]), rows
 
 
-def columns_to_drop(jet_idx):
-    "Columns to drop in each of the jet sets"
-    to_drop = []
+def columns_to_drop(jet_num):
+    """
+    Columns to drop in each of the jet sets.
+    Args:
+        jet_num: Integer presenting the jet number.
+    Returns:
+        A list of columns indices to be dropped from the initial dataset.
+    """
 
-    if jet_idx == 0:
-        to_drop = [4, 5, 6, 12, 22, 23, 24, 25, 26, 27, 28, 29]  # 22 and 29 contains only 0s, the others only -999
-    elif jet_idx == 1:
-        to_drop = [4, 5, 6, 12, 22, 26, 27, 28]
+    columns = []
+
+    if jet_num == 0:
+        columns = [4, 5, 6, 12, 22, 23, 24, 25, 26, 27, 28, 29]
+    elif jet_num == 1:
+        columns = [4, 5, 6, 12, 22, 26, 27, 28]
     else:
-        to_drop = [22]
+        columns = [22]
 
-    return to_drop
+    return columns
 
 
-def split_input_data(dataset_all, output_all=np.array([])):
-    "Split input data into jets"
+def split_input_data(dataset, output=np.array([])):
+    """Split input data into jets."""
     num_jets = 4
     datasets = {}
     outputs = {}
-    original_columns = {}  # for every dataset keep which are the original columns
     rows = {}
     for jet in range(num_jets):
-        curr_dataset, curr_output, row = get_with_jet(dataset_all, output_all, jet)
+        sub_dataset, sub_output, row = get_with_jet(dataset, output, jet)
+        sub_dataset = np.delete(sub_dataset, columns_to_drop(jet), axis=1)
 
-        # drop columns depending on the jet, drop always the PRI_jet_num (column 22)
-        curr_dataset = np.delete(curr_dataset, columns_to_drop(jet), axis=1)
-
-        datasets[jet] = curr_dataset
-        outputs[jet] = curr_output
+        datasets[jet] = sub_dataset
+        outputs[jet] = sub_output
         rows[jet] = row
 
     return datasets, outputs, rows
 
 
 def get_outlier_mask(feature_column):
-    "Mask for the outliers"
+    """
+    Computes a mask to show what samples in the given feature are outliers.
+    Args:
+        feature_column: A 1-D numpy array representing a feature column from initial dataset
+    Returns:
+        A mask with the same shape as the feature column
+    """
     Q1 = np.nanquantile(feature_column, .25)
     Q3 = np.nanquantile(feature_column, .75)
     IQR = Q3 - Q1
 
     def is_outlier(value):
-        return (value < (Q1 - 5 * IQR)) | (value > (Q3 + 5 * IQR))
+        # An outlier is considered to be part of the the lower and upper 5% intervals of the distribution
+        return (value < (Q1 - 4.5 * IQR)) | (value > (Q3 + 4.5 * IQR))
 
     is_outlier_map = np.vectorize(is_outlier)
     return is_outlier_map(feature_column)
 
 
 def remove_outlier_points(data, labels):
-    """Remove outliers"""
+    """
+    Removes the outliers from data and labels accordingly based on the IQR method.
+    """
     feature_columns_masks = np.stack([get_outlier_mask(data[:, i]) for i in range(data.shape[1])])
     datapoints_masks = feature_columns_masks.T
     outliers = np.array([np.any(point) for point in datapoints_masks])
     return data[~outliers], labels[~outliers]
 
 
-def PCA(tx, treshold):
-    """ Principal Component Analysis """
-
+def PCA(tx, threshold):
+    """
+    Performs the Principal Component Analysis method, computing the covariance matrix.
+    Args:
+        tx: the dataset
+        threshold: The percentage under which the components should be captured.
+    Returns:
+        The eigen values, eigen vectors and the number of features above the threshold.
+    """
     cov_matrix = np.cov(tx.T)  # computing covariance matrix, this represents the correlation between two variables
-    eig_vals, eig_ves = np.linalg.eig(cov_matrix)  # eigenvalues and eignvectors
+    eig_values, eig_vectors = np.linalg.eig(cov_matrix)  # eigenvalues and eignvectors
 
     # sort eigenvalues in decreasing order
-    idx = eig_vals.argsort()[::-1]
-    eig_vals = eig_vals[idx]
-    eig_ves = eig_ves[:, idx]
+    idx = eig_values.argsort()[::-1]
+    eig_values = eig_values[idx]
+    eig_vectors = eig_vectors[:, idx]
 
-    eig_vals = eig_vals / sum(eig_vals)
+    eig_values = eig_values / sum(eig_values)
 
     # get only the components that capture certain percent of overall variance
     sum_ = 0
     k = 0
-    while (sum_ < treshold):
-        sum_ = sum_ + eig_vals[k]
+    while (sum_ < threshold):
+        sum_ = sum_ + eig_values[k]
         k += 1
 
-    eig_ves = eig_ves[:, :k - 1]
+    eig_vectors = eig_vectors[:, :k - 1]
 
-    return eig_vals, eig_ves, k - 1
+    return eig_values, eig_vectors, k - 1
 
 
 def cap_outliers_fn(x):
-    "Capping the outliers"
-    print("Capping the outliers")
-    # DER_mass_MMC
-    x[x[:, 0] > 700] = 700
+    """Caps the outliers of a subset of features based on observation on data points plots"""
+    capping_values = {
+        0: 700,   # DER_mass_MMC
+        1: 250,   # DER_mass_transverse_met_lep
+        2: 550,   # DER_mas_vis
+        3:500,    # DER_pt_h
+        8: 300,   # DER_pt_tot
+        9: 900,   # DER_sum_pt
+        10: 9.5,  # DER_pt_ratio_lep_tau
+        13: 280,  # PRI_tau_pt
+        16: 230,  # PRI_lep_pt
+        19: 375,  # PRI_met
+        21: 1000,  # PRI_met_sumet
+        23: 475,  # PRI_jet_leading_pt
+        26: 240,  # PRI_jet_subleading_pt
+        29: 775   # PRI_jet_all_pt
 
-    # DER_mass_transverse_met_lep
-    x[x[:, 1] > 250] = 250
-
-    # DER_mas_vis
-    x[x[:, 2] > 550] = 550
-
-    # DER_pt_h
-    x[x[:, 3] > 500] = 500
-
-    # DER_mass_jet_jet
-    x[x[:, 5] > 2500] = 2500
-
-    # DER_pt_tot
-    x[x[:, 8] > 300] = 300
-
-    # DER_sum_pt
-    x[x[:, 9] > 900] = 900
-
-    # DER_pt_ratio_lep_tau
-    x[x[:, 10] > 9.5] = 9.5
-
-    # PRI_tau_pt
-    x[x[:, 13] > 280] = 280
-
-    # PRI_lep_pt
-    x[x[:, 16] > 230] = 230
-
-    # PRI_met
-    x[x[:, 19] > 375] = 375
-
-    # PRI_met_sumet
-    x[x[:, 21] > 1000] = 1000
-
-    # PRI_jet_leading_pt
-    x[x[:, 23] > 475] = 475
-
-    # PRI_jet_subleading_pt
-    x[x[:, 26] > 240] = 240
-
-    # PRI_jet_all_pt
-    x[x[:, 29] > 775] = 775
+    }
+    
+    for key, value in capping_values.items():
+        x[x[:, key] > value] = value
 
     return x
