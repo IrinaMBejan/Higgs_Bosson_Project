@@ -46,6 +46,7 @@ def split_data(x, y, ratio, seed=1):
 
     return x_train, x_test, y_train, y_test
 
+
 def replace_with_mean(feature_column):
     """"Replace NaN values with the mean of the feature column"""
     mean = np.nanmean(feature_column.astype('float64'))
@@ -69,17 +70,17 @@ def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=F
                       log_mean=None, log_std=None, mean=None, std=None):
     """Preprocess input data"""
 
-    tx = np.where(tx == -999, np.nan, tx) #replace -999 values with the mean
+    tx = np.where(tx == -999, np.nan, tx)  # replace -999 values with the mean
 
-    if remove_outliers: #remove outliers
+    if remove_outliers:  # remove outliers
         tx, y = remove_outlier_points(tx, y)
 
-    if use_dropping: #drop columns
+    if use_dropping:  # drop columns
         columns_to_drop = [0, 4, 5, 6, 12, 23, 24, 25, 26, 27, 28]
         tx = np.delete(tx, columns_to_drop, axis=1)
     else:
         for i in range(tx.shape[1]):
-            tx[:, i] = replace_with_mean(tx[:, i]) #replace NaN values with the mean
+            tx[:, i] = replace_with_mean(tx[:, i])  # replace NaN values with the mean
         # tx = np.nan_to_num(tx)
 
     if use_log:
@@ -97,12 +98,12 @@ def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=F
     if use_log:
         tx = np.c_[tx, log_tx]
 
-    if usePCA: #Primal Component Analysis
+    if usePCA:  # Primal Component Analysis
         eig_val, eig_vec, j = PCA(tx, 0.97)
         tx = tx.dot(eig_vec)
         print('Columns left:', j)
 
-    if poly_rank: #Build polynomial basis function
+    if poly_rank:  # Build polynomial basis function
         tx = build_poly(tx, poly_rank)
 
     return tx, y, mean, std, log_mean, log_std
@@ -110,7 +111,7 @@ def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=F
 
 def get_with_jet(dataset, output_all, jet_num):
     "Given jet and dataset return the rows with th egiven jet number"
-    dataset[:, 22] = np.where(dataset[:, 22] > 3, 3, dataset[:,22])
+    dataset[:, 22] = np.where(dataset[:, 22] > 3, 3, dataset[:, 22])
 
     rows = dataset[:, 22] == jet_num
     if output_all.size != 0:
@@ -152,6 +153,7 @@ def split_input_data(dataset_all, output_all=np.array([])):
 
     return datasets, outputs, rows
 
+
 def get_outlier_mask(feature_column):
     "Mask for the outliers"
     Q1 = np.nanquantile(feature_column, .25)
@@ -172,11 +174,12 @@ def remove_outlier_points(data, labels):
     outliers = np.array([np.any(point) for point in datapoints_masks])
     return data[~outliers], labels[~outliers]
 
+
 def PCA(tx, treshold):
     """ Principal Component Analysis """
 
-    cov_matrix = np.cov(tx.T) # computing covariance matrix, this represents the correlation between two variables
-    eig_vals, eig_ves = np.linalg.eig(cov_matrix) # eigenvalues and eignvectors
+    cov_matrix = np.cov(tx.T)  # computing covariance matrix, this represents the correlation between two variables
+    eig_vals, eig_ves = np.linalg.eig(cov_matrix)  # eigenvalues and eignvectors
 
     # sort eigenvalues in decreasing order
     idx = eig_vals.argsort()[::-1]

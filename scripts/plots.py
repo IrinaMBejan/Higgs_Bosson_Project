@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
-#import seaborn as sns
+# import seaborn as sns
 import numpy as np
-from scripts.data_processor import split_input_data
+from data_processor import split_input_data
 
 
 def plot_features(tx, jet=None):
@@ -40,20 +40,21 @@ def plot_points(tx, y):
 #     plt.show()
 
 def plot_losses(losses):
-  plt.plot(np.arange(len(losses)), losses, label='loss')
+    plt.plot(np.arange(len(losses)), losses, label='loss')
 
-  plt.xlabel("Iterations")
-  plt.title('Training loss')
-  plt.legend(loc='upper right')
+    plt.xlabel("Iterations")
+    plt.title('Training loss')
+    plt.legend(loc='upper right')
 
-  plt.show()
+    plt.show()
+
 
 def plot_test_data(test_losses, test_accs):
-  plt.plot(np.arange(len(test_losses))*10, test_losses,'-b', label='test loss')
-  plt.plot(np.arange(len(test_accs))*10, test_accs,'-r', label='test acc')
+    plt.plot(np.arange(len(test_losses)) * 10, test_losses, '-b', label='test loss')
+    plt.plot(np.arange(len(test_accs)) * 10, test_accs, '-r', label='test acc')
 
-  plt.xlabel("Iterations")
-  plt.title('Validation loss & acc')
-  plt.legend(loc='upper right')
+    plt.xlabel("Iterations")
+    plt.title('Validation loss & acc')
+    plt.legend(loc='upper right')
 
-  plt.show()
+    plt.show()

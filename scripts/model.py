@@ -1,30 +1,8 @@
 import numpy as np
-from scripts.proj1_helpers import create_csv_submission
-from scripts.proj1_helpers import predict_labels
-
-
-def compute_mse(y, tx, w):
-    "Compute mse"
-    e = y - np.dot(tx, w)
-    mse = np.dot(e, e) / (2 * len(e))
-    return mse
-
-
-def calculate_mse(e):
-    """Calculate the mse for vector e."""
-    return 1 / 2 * np.mean(e ** 2)
-
-
-def ls_compute_gradient(y, tx, w):
-    """Compute gradient"""
-    e = y - np.dot(tx, w)
-    gradient = - np.dot(tx.T, e) / len(y)
-    return gradient, e
-
-
-def sigmoid(t):
-    """Apply the sigmoid function on t."""
-    return 1.0 / (1.0 + np.exp(-t))
+from proj1_helpers import create_csv_submission
+from proj1_helpers import predict_labels
+from utils import batch_iter
+from implementations import compute_mse, calculate_mse, compute_gradient, sigmoid
 
 
 def logistic_regression_fn(y, tx, w, lambda_=None):
@@ -40,7 +18,7 @@ def logistic_regression_fn(y, tx, w, lambda_=None):
 
 def least_squares_fn(y, tx, w, lambda_=None):
     """""Compute the gradient using least squares"""
-    gradient, error = ls_compute_gradient(y, tx, w)
+    gradient, error = compute_gradient(y, tx, w)
     loss = calculate_mse(error)
 
     return loss, gradient
@@ -50,12 +28,6 @@ def he_weights_initialization(shape):
     """Initialize weights"""
     w = np.random.randn(shape[0], shape[1]) * np.sqrt(2 / shape[1])
     return w
-
-
-def compute_class_weights(y):
-    """Computing the class weights"""
-    #i think we don't use this?
-    return len(y) / (2 * np.bincount(np.squeeze(y).astype(int)))
 
 
 class Model(object):
@@ -100,7 +72,7 @@ class Model(object):
 
         return accuracy
 
-    def stopping_condition(self, losses, accs):
+    def stopping_condition(self, accs):
         """Stop condition to prevent overfitting"""
         # if validation loss started to decrease during last iters
         should_stop = True
@@ -128,41 +100,16 @@ class Model(object):
 
     def _learn_using_SGD(self, y, tx, w, batch_size, fn, gamma, lambda_, regularization):
         """Stochastic gradient descent."""
-        for y_batch, tx_batch in self._batch_iter(y, tx, batch_size=batch_size, num_batches=1):
+        for y_batch, tx_batch in batch_iter(y, tx, batch_size=batch_size, num_batches=1):
             loss, grad = fn(y_batch, tx_batch, w, lambda_)
             loss, grad = self.apply_regularization(w, loss, grad, regularization, lambda_, tx.shape[0])
             w = w - gamma * grad
         return loss, w
 
-    def _batch_iter(self, y, tx, batch_size, num_batches=1, shuffle=True):
-        """
-        Generate a minibatch iterator for a dataset.
-        Takes as input two iterables (here the output desired values 'y' and the input data 'tx')
-        Outputs an iterator which gives mini-batches of `batch_size` matching elements from `y` and `tx`.
-        Data can be randomly shuffled to avoid ordering in the original data messing with the randomness of the minibatches.
-        Example of use :
-        for minibatch_y, minibatch_tx in batch_iter(y, tx, 32):
-            <DO-SOMETHING>
-        """
-        data_size = len(y)
-
-        if shuffle:
-            shuffle_indices = np.random.permutation(np.arange(data_size))
-            shuffled_y = y[shuffle_indices]
-            shuffled_tx = tx[shuffle_indices]
-        else:
-            shuffled_y = y
-            shuffled_tx = tx
-        for batch_num in range(num_batches):
-            start_index = batch_num * batch_size
-            end_index = min((batch_num + 1) * batch_size, data_size)
-            if start_index != end_index:
-                yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
-
     def train(self, y, tx, y_test, tx_test, fn, max_iters=8000, gamma=1, batch_size=None, all_output=False,
               reg_lambda=None, regularization=None, gamma_decay=None, reinitialize_weights=False):
         """Function to train the model  """
-        #If batch size is set, the SGD is used instead of GD.
+        # If batch size is set, the SGD is used instead of GD.
         self.tx = tx
         self.gamma = gamma
         self.use_logistic = fn == logistic_regression_fn
@@ -203,7 +150,7 @@ class Model(object):
                     self.best_weights = self.w
                     self.best_acc = acc
 
-                # if len(self.test_accs) > 3 and self.stopping_condition(self.test_losses, self.test_accs) and not batch_size:
+                # if len(self.test_accs) > 3 and self.stopping_condition(self.test, self.test_accs) and not batch_size:
                 #   break
 
             if iter > 0 and iter % 100 == 0 and gamma_decay:
