@@ -1,8 +1,9 @@
 import numpy as np
 from scripts.data_processor import split_data, preprocess_inputs, cap_outliers_fn, split_input_data
 from scripts.plots import plot_test_data
-from scripts.model import Model, least_squares_fn
-from scripts.proj1_helpers import create_csv_submission, load_csv_data
+from scripts.model import Model, least_squares_fn, logistic_regression_fn
+from scripts.proj1_helpers import create_csv_submission, load_csv_data, predict_labels
+from scripts.utils import load_weights_model, save_weights_model
 
 means = []
 stds = []
@@ -11,10 +12,16 @@ log_stds = []
 num_jets = 4
 models = [Model()] * 4
 
+model_weights_filenames = [
+  'model_0_poly_7_cap_extradrop_log.npy',
+  'model_1_poly_7_cap_extradrop_log.npy',
+  'model_2_poly_7_cap_extradrop_log.npy',
+  'model_3_poly_7_cap_extradrop_log.npy'
+]
+
 def train_model(dataset, output, model, fn, **kwargs):
     print('Preprocessing inputs...')
-    tx_preprocessed, y_preprocced, mean, std, log_mean, log_std = preprocess_inputs(dataset, output, use_log=True,
-                                                                                    poly_rank=7)
+    tx_preprocessed, y_preprocced, mean, std, log_mean, log_std = preprocess_inputs(dataset, output, use_log=True, poly_rank=5)
     tx_train, tx_test, y_train, y_test = split_data(tx_preprocessed, y_preprocced, 0.7)
 
     print('Training...')
@@ -50,8 +57,8 @@ def create_submission(name, tx_test):
 
 
 def load_data(change_labels=True):
-    train_path = '/data/train.csv'
-    test_path = '/data/test.csv'
+    train_path = "../data/train.csv"
+    test_path = "../data/test.csv"
 
     print('Reading from file {}'.format(train_path))
     y, tx, ids = load_csv_data(train_path, sub_sample=False)
@@ -65,18 +72,46 @@ def load_data(change_labels=True):
 
     return tx, y, tx_submission
 
-tx, y, tx_submission = load_data(change_labels=False)
-tx_c = cap_outliers_fn(tx)
-datasets, outputs, _ = split_input_data(tx_c, y)
+def run(pretrained=True, generate_submission_file=True):
+  tx, y, tx_submission = load_data(change_labels=False)
+  tx_c = cap_outliers_fn(tx)
+  datasets, outputs, _ = split_input_data(tx_c, y)
 
-jet = 0
-models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=10000, gamma=0.015, reg_lambda=0.0001, regularization='l1')
+  for jet in range(num_jets):
+    print('Training model for jet', jet)
+    if pretrained:
+      models[jet].w = load_weights_model(model_weights_filenames[jet])
+      models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], logistic_regression_fn, max_iters=250, batch_size=8192, gamma_decay=None, gamma=0.1, reg_lambda=1e-6, regularization='l2')
+    else:
+      models[jet] = Model()
+      models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=10000, gamma=0.05, reg_lambda=1e-6, regularization='l2')
+      save_weights_model(models[jet], 'model_{}_least_squares.npy'.format(jet))
 
-jet = 1
-models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=10000, gamma=0.015, reg_lambda=0.0001, regularization='l1')
+    print('Accuracy on whole training is', get_train_data_accuracy(tx, y))
 
-jet = 2
-models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=10000, gamma=0.015, reg_lambda=0.0001, regularization='l1')
+  means.append(mean)
+  stds.append(std)
+  log_means.append(log_mean)
+  log_stds.append(log_std)
 
-jet = 3
-models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=40000, gamma=0.015, reg_lambda=0.0001, regularization='l1')
+  if generate_submission_file:
+    create_submission('output.csv', tx_submission)
+
+run(pretrained=False)
+
+
+# tx, y, tx_submission = load_data(change_labels=False)
+# tx_c = cap_outliers_fn(tx)
+# datasets, outputs, _ = split_input_data(tx_c, y)
+#
+# jet = 0
+# models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=10000, gamma=0.1, reg_lambda=0.0001, regularization='l1')
+#
+# jet = 1
+# models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=10000, gamma=0.015, reg_lambda=0.0001, regularization='l1')
+#
+# jet = 2
+# models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=10000, gamma=0.015, reg_lambda=0.0001, regularization='l1')
+#
+# jet = 3
+# models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet], least_squares_fn, batch_size=None, max_iters=40000, gamma=0.015, reg_lambda=0.0001, regularization='l1')

@@ -1,28 +1,31 @@
 import numpy as np
 
 
-def standardize(x):
-    "Standardize the data"
-    centered_data = x - np.mean(x, axis=0)
-    std_data = centered_data / np.std(centered_data, axis=0)
-    return std_data
+def standardize(x, mean=None, std=None):
+    if mean is None:
+        mean = np.mean(x, axis=0)
+
+    centered_data = x - mean
+
+    if std is None:
+        std = np.std(centered_data, axis=0)
+
+    std_data = centered_data / std
+    return std_data, mean, std
 
 
-def normalize(x):
-    "Normalize the data"
-    return x / np.linalg.norm(x, axis=0)
+def scaling(x, min_x=None, max_x=None):
+    if min_x is None:
+        min_x = np.min(x, axis=0)
 
+    if max_x is None:
+        max_x = np.max(x, axis=0)
 
-def scaling(x):
-    "Scale the data"
-    min_x = np.min(x, axis=0)
-    max_x = np.max(x, axis=0)
     scaled_data = (x - min_x) / (max_x - min_x)
     return scaled_data
 
 
 def split_data(x, y, ratio, seed=1):
-    "Splitting the data on the train and validation set"
     # set seed
     np.random.seed(seed)
     row_num = len(y)
@@ -41,8 +44,26 @@ def split_data(x, y, ratio, seed=1):
     return x_train, x_test, y_train, y_test
 
 
+def get_outlier_mask(feature_column):
+    Q1 = np.nanquantile(feature_column, .25)
+    Q3 = np.nanquantile(feature_column, .75)
+    IQR = Q3 - Q1
+
+    def is_outlier(value):
+        return (value < (Q1 - 5 * IQR)) | (value > (Q3 + 5 * IQR))
+
+    is_outlier_map = np.vectorize(is_outlier)
+    return is_outlier_map(feature_column)
+
+
+def remove_outlier_points(data, labels):
+    feature_columns_masks = np.stack([get_outlier_mask(data[:, i]) for i in range(data.shape[1])])
+    datapoints_masks = feature_columns_masks.T
+    outliers = np.array([np.any(point) for point in datapoints_masks])
+    return data[~outliers], labels[~outliers]
+
+
 def replace_with_mean(feature_column):
-    "Replace all NaN values with the mean of the feature column"
     mean = np.nanmean(feature_column.astype('float64'))
     feature_column = np.where(np.isnan(feature_column),
                               mean,
@@ -51,7 +72,7 @@ def replace_with_mean(feature_column):
 
 
 def build_poly(x, degree):
-    """Polynomial basis functions for input data x, for j=0 up to j=degree."""
+    """polynomial basis functions for input data x, for j=0 up to j=degree."""
     poly = np.ones((len(x), 1));
 
     for i in range(degree):
@@ -60,8 +81,8 @@ def build_poly(x, degree):
     return poly
 
 
-def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=False, poly_rank=None):
-    "Function to preprocess the input data"
+def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=False, poly_rank=None, use_log=True,
+                      log_mean=None, log_std=None, mean=None, std=None):
     tx = np.where(tx == -999, np.nan, tx)
 
     if remove_outliers:
@@ -75,17 +96,20 @@ def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=F
             tx[:, i] = replace_with_mean(tx[:, i])
         # tx = np.nan_to_num(tx)
 
-    # Standardize & scale the data
-    eps = 1e-320
-    log_tx = np.abs(tx)
-    log_tx[log_tx < eps] = 1
-    # log_tx = np.log(log_tx)
-    # log_tx = standardize(log_tx)
-    # log_tx = scaling(log_tx)
+    if use_log:
+        # Standardize & scale the data
+        eps = 1e-320
+        log_tx = np.abs(tx)
+        log_tx[log_tx < eps] = 1
+        log_tx = np.log(log_tx)
+        log_tx, log_mean, log_std = standardize(log_tx, mean=log_mean, std=log_std)
+        log_tx = scaling(log_tx)
 
-    tx = standardize(tx)
+    tx, mean, std = standardize(tx, mean=mean, std=std)
     tx = scaling(tx)
-    # tx = np.c_[tx, log_tx]
+
+    if use_log:
+        tx = np.c_[tx, log_tx]
 
     if usePCA:
         eig_val, eig_vec, j = PCA(tx, 0.97)
@@ -95,7 +119,8 @@ def preprocess_inputs(tx, y, use_dropping=False, remove_outliers=False, usePCA=F
     if poly_rank:
         tx = build_poly(tx, poly_rank)
 
-    return tx, y
+    return tx, y, mean, std, log_mean, log_std
+
 
 
 def get_with_jet(dataset, output_all, jet_num):

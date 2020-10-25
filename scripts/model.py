@@ -1,5 +1,6 @@
 import numpy as np
 from scripts.proj1_helpers import create_csv_submission
+from scripts.proj1_helpers import predict_labels
 
 
 def compute_mse(y, tx, w):
@@ -63,34 +64,31 @@ class Model(object):
         pass
 
     def predict(self, inputs):
-        """Predict labels"""
-        # Uncomment if using least squares
-        # return predict_labels(self.w, inputs)
-        return self.predict_labels_logistic(self.w, inputs)
+        if self.use_logistic:
+            return self.predict_labels_logistic(self.w, inputs)
+        return predict_labels(self.w, inputs)
 
     def predict_labels_logistic(self, weights, data):
-        """Predict labels for logistic regression"""
         y_pred = sigmoid(np.dot(data, weights))
         y_pred[np.where(y_pred < 0.5)] = 0
         y_pred[np.where(y_pred >= 0.5)] = 1
         return y_pred
 
     def create_submission(self, inputs, name):
-        """Create cvs submission"""
-        # Look into files.download
         pred = self.predict(inputs)
-        pred[np.where(pred == 0)] = -1
+
+        if self.use_logistic:
+            pred[np.where(pred == 0)] = -1
+
         create_csv_submission(list(range(350000, 350000 + len(pred))), pred, name)
         files.download(name)
         return name
 
     def initialize_weights(self, shape):
-        """Initialize weights"""
         # Our function is not convex
-        return he_weights_initialization(shape)  # np.zeros(shape)
+        return he_weights_initialization(shape)
 
     def compute_accuracy(self, inputs, true_values):
-        """Compute accuracy for given inputs and targets"""
         predicted_values = self.predict(inputs)
         number_correct = np.sum(predicted_values == true_values)
         accuracy = number_correct / len(predicted_values)
@@ -98,7 +96,6 @@ class Model(object):
         return accuracy
 
     def stopping_condition(self, losses, accs):
-        """Stop condition for validation set"""
         # if validation loss started to decrease during last iters
         should_stop = True
         for i in np.arange(2, 4):
@@ -107,7 +104,6 @@ class Model(object):
         return should_stop
 
     def apply_regularization(self, w, loss, gradient, regularization, lambda_, m):
-        """Regularization function"""
         if regularization == 'l2':
             loss += lambda_ / (2 * m) * np.squeeze(w.T.dot(w))
             gradient += lambda_ / m * w
@@ -117,7 +113,6 @@ class Model(object):
         return loss, gradient
 
     def _learn_using_GD(self, y, tx, w, fn, gamma, lambda_, regularization):
-        """Gradient descent"""
         loss, grad = fn(y, tx, w, lambda_)
         loss, grad = self.apply_regularization(w, loss, grad, regularization, lambda_, tx.shape[0])
         w = w - gamma * grad
@@ -125,12 +120,10 @@ class Model(object):
 
     def _learn_using_SGD(self, y, tx, w, batch_size, fn, gamma, lambda_, regularization):
         """Stochastic gradient descent."""
-        # losses = []
         for y_batch, tx_batch in self._batch_iter(y, tx, batch_size=batch_size, num_batches=1):
             loss, grad = fn(y_batch, tx_batch, w, lambda_)
             loss, grad = self.apply_regularization(w, loss, grad, regularization, lambda_, tx.shape[0])
             w = w - gamma * grad
-            # losses.append(loss)
         return loss, w
 
     def _batch_iter(self, y, tx, batch_size, num_batches=1, shuffle=True):
@@ -159,13 +152,13 @@ class Model(object):
                 yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
     def train(self, y, tx, y_test, tx_test, fn, max_iters=8000, gamma=1, batch_size=None, all_output=False,
-              reg_lambda=None, regularization='l2', gamma_decay=None, reinitialize_weights=False):
-        """ Function to train the model"""
-        # If batch size is set, the SGD is used instead of GD.
-        # tx = np.c_[np.ones((tx.shape[0], 1)), tx]
-        # tx_test = np.c_[np.ones((tx_test.shape[0], 1)), tx_test]
+              reg_lambda=None, regularization=None, gamma_decay=None, reinitialize_weights=False):
+        """
+        If batch size is set, the SGD is used instead of GD.
+        """
         self.tx = tx
         self.gamma = gamma
+        self.use_logistic = fn == logistic_regression_fn
 
         if not hasattr(self, 'w') or reinitialize_weights:
             self.w = self.initialize_weights((tx.shape[1], 1))
