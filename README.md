@@ -38,10 +38,7 @@ and regularized logistic regression using GD or SGD. Also, the file contains add
 > The needed libraries are stated in `requirements.txt`, to install them run: `pip install -r requirements.txt` (Python 2), 
 or `pip3 install -r requirements.txt` (Python 3).
 
-2. To run the model with our best results simply run the python script `run.py`.
-
-Another way of running the model is opening the `project1.ipybn` as *Jupyter notebook* or in 
-*Google Colab*. There, you can run all the cells and experiment further.
+2. To run the model with our best results simply run the python script `run.py`, which will run the best model based on logistic regression for a small number of iterations using pretrained weights because training from scratch takes long. However, to train from scratch, set `USE_PRETRAINED=False` in the `run.py` file.
 
 ### Authors
 

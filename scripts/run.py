@@ -12,7 +12,7 @@ from utils import load_weights_model, save_weights_model
 USE_LOGISTIC = True
 # If set to pretrained, it will load weights for models. Only available for logistic regression where training takes
 # a long time.
-USE_PRETRAINED = True
+USE_PRETRAINED = False
 
 # Global values to store training data the mean, standard deviation, logarithmic mean and logarithmic standard deviation
 # for each model corresponding to each jet.
@@ -152,21 +152,26 @@ def run_logistic_regression(pretrained=True, generate_submission_file=False) -> 
     tx_c = cap_outliers_fn(tx)
     datasets, outputs, _ = split_input_data(tx_c, y)
 
-    for jet in range(num_jets):
+    for jet in range(2, num_jets):
         print('Training model for jet', jet)
         if pretrained:
             models[jet].w = load_weights_model(model_weights_filenames[jet])
 
             models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet],
-                                                                    logistic_regression_fn, max_iters=300,
+                                                                    logistic_regression_fn, max_iters=50,
                                                                     batch_size=8192, gamma_decay=None, gamma=0.1,
                                                                     reg_lambda=1e-6, regularization='l2')
         else:
             models[jet] = Model()
+            gammas=[0.3, 0.1, 0.1, 0.3]
+            gamma_decays=[None, None, None, 0.95] # 5, 0.95]
+            batch_sizes=[8192, 2048, 2048, 2048]
             models[jet], mean, std, log_mean, log_std = train_model(datasets[jet], outputs[jet], models[jet],
-                                                                    logistic_regression_fn, batch_size=8192,
-                                                                    max_iters=40000,
-                                                                    gamma=0.1, reg_lambda=1e-6, regularization='l2')
+                                                                    logistic_regression_fn, batch_size=128,
+                                                                    max_iters=10000,
+                                                                    gamma=gammas[jet],
+                                                                    gamma_decay=gamma_decays[jet],
+                                                                    reg_lambda=1e-6, regularization='l2')
             save_weights_model(models[jet], '../output_files/model_{}_logistic_regression.npy'.format(jet))
 
         means.append(mean)

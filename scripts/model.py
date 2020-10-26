@@ -212,7 +212,7 @@ class Model(object):
                     self.best_acc = acc
 
                 # The stopping condition is applied only in the case of gradient descent.
-                if len(self.test_accs) > 100 and self.stopping_condition(self.test, self.test_accs) and not batch_size:
+                if len(self.test_accs) > 100 and self.stopping_condition(self.test_accs) and not batch_size:
                    break
 
             if iter > 0 and iter % 100 == 0 and gamma_decay:
