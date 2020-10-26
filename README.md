@@ -30,8 +30,6 @@ and regularized logistic regression using GD or SGD. Also, the file contains add
 <br />`plots.py` - Methods for plotting the data.
 <br />`proj1_helpers.py` - Helpers received for the project.
 
-- There is also `project1.ipybn` - a notebook that contains the whole code and can provide more insight into understanding our approach.
-
 ### Running the model
 
 1. To run the code you first need to have *Python* installed. Also, the only external library for the model used in *numpy*, but if you want to generate plots you should also install *matplotlib*.
