@@ -7,7 +7,7 @@ some other process/particle (background) is undoubtedly significant.
 Improvements in the current solutions are still needed and highly valuable.
 
 We explore various methods and propose a binary classifier based on logistic regression, 
-which has achieved an accuracy of 79.9\% on the AICrowd platform.
+which has achieved an accuracy of 80\% on the AICrowd platform.
 
 ### Model structure
 
